@@ -37,14 +37,4 @@ def on_press(key):
 
 
 if __name__ == "__main__":
-#    liste = ['pip list | grep -F pyperclip','pip list | grep -F pynput']
-#    for elem in liste:
-#        result = os.system(elem)
-#        print (result)
-#        if result != 0:
-#          lastelem = elem.split(" ").pop();
-#          os.system('pip install '+lastelem)
-#    list = []
-#    with keyboard.Listener(on_press = on_press) as listener:
-#      listener.join()
       copy_paste()
