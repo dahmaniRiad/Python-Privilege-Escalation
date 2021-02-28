@@ -56,7 +56,7 @@ def sendFile():
 	print("Le fichier a été correctement copié et effacer ")
 
 
-if __name__ == "__main__":
+if _name_ == "_main_":
       a = datetime.datetime.now().time()
       a= addSecs(a,10)
       copy_paste(a)
